@@ -1,0 +1,26 @@
+[
+  {
+    "firstName": "Mitrajit",
+    "lastName": "Chandra",
+    "email": "chandra.rupam@gmail.com",
+    "password": "$2b$10$w9yY6WpEHHskfP6OuMjnZej8RhfQkCADXErNULV9wZoC98BDACgh6",
+    "settings": {
+      "r": 255,
+      "g": 120,
+      "b": 50,
+      "brightness": 255
+    }
+  },
+  {
+    "firstName": "Mallyajit",
+    "lastName": "Chandra",
+    "email": "mallyajitchandra@gmail.com",
+    "password": "$2b$10$bq7yS6D/.XDy/ZbRxrBi0.LODQpzMaUWy8fzQOmyII6vrcZWw6FMO",
+    "settings": {
+      "r": 85,
+      "g": 85,
+      "b": 255,
+      "brightness": 80
+    }
+  }
+]
