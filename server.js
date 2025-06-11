@@ -62,7 +62,7 @@ function authMiddleware(req, res, next) {
 // --- API Routes ---
 
 //Time sync/colour sync in daylight mode
-app.get("/daylight-rgb", (req, res) => {
+app.get("/api/auto-light", (req, res) => {
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
@@ -203,6 +203,33 @@ app.post("/settings", authMiddleware, (req, res) => {
   saveUsers(users);
 
   res.json({ message: "Settings saved successfully" });
+});
+
+app.post("/api/save-auto-daylight", authMiddleware, (req, res) => {
+  const { autoDaylight } = req.body;
+  const email = req.email;
+  if (typeof autoDaylight !== "boolean") {
+    return res.status(400).json({ success: false });
+  }
+  const users = loadUsers();
+  const user = users.find((u) => u.email === email);
+  if (!user) return res.status(404).json({ success: false });
+  user.settings = user.settings || {};
+  user.settings.autoDaylight = autoDaylight;
+  saveUsers(users);
+  res.json({ success: true });
+});
+
+// POST /api/get-auto-daylight
+app.post("/api/get-auto-daylight", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Missing email" });
+
+  const users = loadUsers();
+  const user = users.find((u) => u.email === email);
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  res.json(user.settings || {});
 });
 
 // --- Start Server ---

@@ -17,10 +17,11 @@
     "email": "mallyajitchandra@gmail.com",
     "password": "$2b$10$bq7yS6D/.XDy/ZbRxrBi0.LODQpzMaUWy8fzQOmyII6vrcZWw6FMO",
     "settings": {
-      "r": 85,
-      "g": 85,
+      "autoDaylight": true,
+      "r": 255,
+      "g": 255,
       "b": 255,
-      "brightness": 80
+      "brightness": 255
     }
   }
 ]
