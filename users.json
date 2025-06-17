@@ -1,17 +1,5 @@
 [
   {
-    "firstName": "Mitrajit",
-    "lastName": "Chandra",
-    "email": "chandra.rupam@gmail.com",
-    "password": "$2b$10$w9yY6WpEHHskfP6OuMjnZej8RhfQkCADXErNULV9wZoC98BDACgh6",
-    "settings": {
-      "r": 255,
-      "g": 120,
-      "b": 50,
-      "brightness": 255
-    }
-  },
-  {
     "firstName": "Mallyajit",
     "lastName": "Chandra",
     "email": "mallyajitchandra@gmail.com",
@@ -23,21 +11,28 @@
       "b": 255,
       "brightness": 255,
       "timers": {
-        "lightTimerEnabled": true,
+        "lightTimerEnabled": false,
         "co2TimerEnabled": true,
         "lightTimers": [
           {
             "color": "#ffd700",
-            "fadeIn": "02:10",
-            "peakStart": "04:31",
-            "peakEnd": "06:16",
-            "fadeOut": "09:33"
+            "fadeIn": "00:45",
+            "peakStart": "05:55",
+            "peakEnd": "06:22",
+            "fadeOut": "10:16"
+          },
+          {
+            "color": "#fbf4cb",
+            "fadeIn": "12:14",
+            "peakStart": "13:46",
+            "peakEnd": "17:14",
+            "fadeOut": "20:35"
           }
         ],
         "co2Timers": [
           {
-            "startTime": "05:41",
-            "endTime": "13:12"
+            "startTime": "04:30",
+            "endTime": "14:47"
           }
         ]
       }

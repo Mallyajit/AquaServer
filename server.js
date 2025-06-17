@@ -213,12 +213,23 @@ app.get("/api/timers", authMiddleware, (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
   // Return the timer settings, or an empty object if none are saved
-  res.json(user.settings.timers || {});
+  res.json({
+    timers: user.settings.timers || {},
+    autoDaylight: user.settings.autoDaylight,
+  });
 });
 
 // ✅ Save user-specific timer settings
 app.post("/api/timers", authMiddleware, (req, res) => {
-  const newTimers = req.body; // Expects an object with all timer data
+  // Destructure the incoming body to separate autoDaylight from timer details
+  const {
+    autoDaylight,
+    lightTimerEnabled,
+    co2TimerEnabled,
+    lightTimers,
+    co2Timers,
+  } = req.body;
+
   const users = loadUsers();
   const userIndex = users.findIndex((u) => u.email === req.email);
 
@@ -226,14 +237,34 @@ app.post("/api/timers", authMiddleware, (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // Ensure the settings object exists
+  // Ensure the settings object exists for the user
   if (!users[userIndex].settings) {
     users[userIndex].settings = {};
   }
 
-  // Save the new timer data
-  users[userIndex].settings.timers = newTimers;
-  saveUsers(users);
+  // --- Crucial Fix Here ---
+  // 1. Save autoDaylight directly to user.settings
+  if (typeof autoDaylight === "boolean") {
+    // Ensure it's a boolean
+    users[userIndex].settings.autoDaylight = autoDaylight;
+  } else {
+    // If autoDaylight is not provided or not a boolean, keep existing or set a default
+    users[userIndex].settings.autoDaylight =
+      users[userIndex].settings.autoDaylight || false;
+  }
+
+  // 2. Save the timer-specific settings to user.settings.timers
+  // Ensure the timers object itself exists
+  if (!users[userIndex].settings.timers) {
+    users[userIndex].settings.timers = {};
+  }
+  users[userIndex].settings.timers.lightTimerEnabled = lightTimerEnabled;
+  users[userIndex].settings.timers.co2TimerEnabled = co2TimerEnabled;
+  users[userIndex].settings.timers.lightTimers = lightTimers;
+  users[userIndex].settings.timers.co2Timers = co2Timers;
+  // --- End of Fix ---
+
+  saveUsers(users); // Save the updated users data to your JSON file
 
   res.json({ message: "Timer settings saved successfully" });
 });
@@ -248,9 +279,26 @@ app.post("/api/save-auto-daylight", authMiddleware, (req, res) => {
   const user = users.find((u) => u.email === email);
   if (!user) return res.status(404).json({ success: false });
   user.settings = user.settings || {};
+
+  let lightTimerDisabled = false; // Flag to send back to the frontend
+
+  // If autoDaylight is being turned ON (true)
+  if (autoDaylight === true) {
+    // Ensure timers object and lightTimerEnabled property exist before trying to access
+    user.settings.timers = user.settings.timers || {};
+    // Check if lightTimerEnabled was true before setting it to false
+    if (user.settings.timers.lightTimerEnabled === true) {
+      user.settings.timers.lightTimerEnabled = false; // Turn off light timer
+      lightTimerDisabled = true; // Set flag to true for frontend alert
+    }
+  }
+
   user.settings.autoDaylight = autoDaylight;
   saveUsers(users);
-  res.json({ success: true });
+  res.json({
+    success: true,
+    lightTimerDisabledByAutoDaylight: lightTimerDisabled,
+  });
 });
 
 // POST /api/get-auto-daylight
