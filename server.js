@@ -205,6 +205,39 @@ app.post("/settings", authMiddleware, (req, res) => {
   res.json({ message: "Settings saved successfully" });
 });
 
+// ✅ Get user-specific timer settings
+app.get("/api/timers", authMiddleware, (req, res) => {
+  const users = loadUsers();
+  const user = users.find((u) => u.email === req.email);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  // Return the timer settings, or an empty object if none are saved
+  res.json(user.settings.timers || {});
+});
+
+// ✅ Save user-specific timer settings
+app.post("/api/timers", authMiddleware, (req, res) => {
+  const newTimers = req.body; // Expects an object with all timer data
+  const users = loadUsers();
+  const userIndex = users.findIndex((u) => u.email === req.email);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Ensure the settings object exists
+  if (!users[userIndex].settings) {
+    users[userIndex].settings = {};
+  }
+
+  // Save the new timer data
+  users[userIndex].settings.timers = newTimers;
+  saveUsers(users);
+
+  res.json({ message: "Timer settings saved successfully" });
+});
+
 app.post("/api/save-auto-daylight", authMiddleware, (req, res) => {
   const { autoDaylight } = req.body;
   const email = req.email;

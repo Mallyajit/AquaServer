@@ -21,7 +21,26 @@
       "r": 255,
       "g": 255,
       "b": 255,
-      "brightness": 255
+      "brightness": 255,
+      "timers": {
+        "lightTimerEnabled": true,
+        "co2TimerEnabled": true,
+        "lightTimers": [
+          {
+            "color": "#ffd700",
+            "fadeIn": "02:10",
+            "peakStart": "04:31",
+            "peakEnd": "06:16",
+            "fadeOut": "09:33"
+          }
+        ],
+        "co2Timers": [
+          {
+            "startTime": "05:41",
+            "endTime": "13:12"
+          }
+        ]
+      }
     }
   }
 ]
