@@ -5,28 +5,35 @@
     "email": "mallyajitchandra@gmail.com",
     "password": "$2b$10$bq7yS6D/.XDy/ZbRxrBi0.LODQpzMaUWy8fzQOmyII6vrcZWw6FMO",
     "settings": {
-      "autoDaylight": true,
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "autoDaylight": false,
+      "r": 0,
+      "g": 0,
+      "b": 0,
       "brightness": 255,
       "timers": {
-        "lightTimerEnabled": false,
+        "lightTimerEnabled": true,
         "co2TimerEnabled": true,
         "lightTimers": [
           {
-            "color": "#ffd700",
-            "fadeIn": "00:45",
-            "peakStart": "05:55",
-            "peakEnd": "06:22",
-            "fadeOut": "10:16"
+            "color": "#fa0000",
+            "fadeIn": "03:02",
+            "peakStart": "03:05",
+            "peakEnd": "03:06",
+            "fadeOut": "03:10"
           },
           {
-            "color": "#fbf4cb",
-            "fadeIn": "12:14",
-            "peakStart": "13:46",
-            "peakEnd": "17:14",
-            "fadeOut": "20:35"
+            "color": "#ff0000",
+            "fadeIn": "03:12",
+            "peakStart": "03:17",
+            "peakEnd": "03:18",
+            "fadeOut": "03:24"
+          },
+          {
+            "color": "#ff0000",
+            "fadeIn": "",
+            "peakStart": "",
+            "peakEnd": "",
+            "fadeOut": ""
           }
         ],
         "co2Timers": [

@@ -2,6 +2,7 @@
 require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -63,26 +64,46 @@ function authMiddleware(req, res, next) {
 
 //Time sync/colour sync in daylight mode
 app.get("/api/auto-light", (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  const usersPath = path.join(__dirname, "users.json");
+  let users = [];
+
+  try {
+    users = JSON.parse(fs.readFileSync(usersPath, "utf-8"));
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to read user data" });
+  }
+
+  const user = users.find((u) => u.email === email);
+  if (!user || !user.settings) {
+    return res
+      .status(404)
+      .json({ error: "User not found or missing settings" });
+  }
+
+  const brightness = user.settings.brightness || 255; // fallback to full brightness
+
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
-  const time = hour + minute / 60; // fractional hour (0 - 24)
+  const time = hour + minute / 60;
 
-  // Normalize time to daylight range (6:00 to 18:00)
-  // Outside this range, lights are dim/night mode
   if (time < 6 || time >= 18) {
-    // 🌙 Night (blue dim)
-    return res.json({ r: 20, g: 20, b: 60 });
+    return res.json({
+      r: Math.round((20 * brightness) / 255),
+      g: Math.round((20 * brightness) / 255),
+      b: Math.round((60 * brightness) / 255),
+    });
   }
 
-  // Map time to angle: 6:00 -> 0°, 12:00 -> 90°, 18:00 -> 180°
   const angleDeg = ((time - 6) / 12) * 180;
   const angleRad = (angleDeg * Math.PI) / 180;
-
-  // Use sine curve to calculate intensity: sin(0) = 0 (sunrise), sin(90°) = 1 (noon), sin(180°) = 0 (sunset)
   const intensity = Math.sin(angleRad);
 
-  // Map color temperature: sunrise (orange) → midday (white) → sunset (reddish)
   const sunriseColor = { r: 255, g: 150, b: 50 };
   const noonColor = { r: 255, g: 255, b: 255 };
   const sunsetColor = { r: 255, g: 100, b: 100 };
@@ -90,21 +111,19 @@ app.get("/api/auto-light", (req, res) => {
   let r, g, b;
 
   if (time < 12) {
-    // 🌅 Sunrise to noon
     r = sunriseColor.r + intensity * (noonColor.r - sunriseColor.r);
     g = sunriseColor.g + intensity * (noonColor.g - sunriseColor.g);
     b = sunriseColor.b + intensity * (noonColor.b - sunriseColor.b);
   } else {
-    // 🌇 Noon to sunset
     r = noonColor.r - (1 - intensity) * (noonColor.r - sunsetColor.r);
     g = noonColor.g - (1 - intensity) * (noonColor.g - sunsetColor.g);
     b = noonColor.b - (1 - intensity) * (noonColor.b - sunsetColor.b);
   }
 
   res.json({
-    r: Math.round(r),
-    g: Math.round(g),
-    b: Math.round(b),
+    r: Math.round((r * brightness) / 255),
+    g: Math.round((g * brightness) / 255),
+    b: Math.round((b * brightness) / 255),
   });
 });
 
@@ -311,6 +330,94 @@ app.post("/api/get-auto-daylight", (req, res) => {
   if (!user) return res.status(404).json({ error: "User not found" });
 
   res.json(user.settings || {});
+});
+
+const hexToRgb = (hex) => {
+  const bigint = parseInt(hex.replace("#", ""), 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
+};
+
+const minutesSinceMidnight = (date = new Date()) =>
+  date.getHours() * 60 + date.getMinutes();
+
+const timeToMinutes = (timeStr) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+};
+
+app.get("/api/light-timer-color", (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  const users = loadUsers();
+  const user = users.find((u) => u.email === email);
+
+  if (!user || !user.settings || !user.settings.timers) {
+    return res.status(404).json({ error: "User or settings not found" });
+  }
+
+  const { lightTimerEnabled, lightTimers } = user.settings.timers;
+  const brightness = user.settings.brightness || 255;
+
+  if (!lightTimerEnabled || !Array.isArray(lightTimers)) {
+    return res.json({ color: null }); // light timer not enabled
+  }
+
+  const now = new Date();
+  const nowMins = minutesSinceMidnight(now);
+
+  for (const timer of lightTimers) {
+    const fadeIn = timeToMinutes(timer.fadeIn);
+    const peakStart = timeToMinutes(timer.peakStart);
+    const peakEnd = timeToMinutes(timer.peakEnd);
+    const fadeOut = timeToMinutes(timer.fadeOut);
+    const color = hexToRgb(timer.color);
+
+    // Fade In Period (fadeIn → peakStart)
+    const fadeInDuration = (peakStart - fadeIn + 1440) % 1440;
+    const fadeInElapsed = (nowMins - fadeIn + 1440) % 1440;
+    if (fadeInElapsed < fadeInDuration) {
+      const progress = fadeInElapsed / fadeInDuration;
+      return res.json({
+        r: Math.round((color.r * progress * brightness) / 255),
+        g: Math.round((color.g * progress * brightness) / 255),
+        b: Math.round((color.b * progress * brightness) / 255),
+      });
+    }
+
+    // Peak Period (peakStart → peakEnd)
+    const inPeak =
+      (peakStart <= peakEnd && nowMins >= peakStart && nowMins < peakEnd) ||
+      (peakStart > peakEnd && (nowMins >= peakStart || nowMins < peakEnd));
+    if (inPeak) {
+      return res.json({
+        r: Math.round((color.r * brightness) / 255),
+        g: Math.round((color.g * brightness) / 255),
+        b: Math.round((color.b * brightness) / 255),
+      });
+    }
+
+    // Fade Out Period (peakEnd → fadeOut)
+    const fadeOutDuration = (fadeOut - peakEnd + 1440) % 1440;
+    const fadeOutElapsed = (nowMins - peakEnd + 1440) % 1440;
+    if (fadeOutElapsed < fadeOutDuration) {
+      const progress = 1 - fadeOutElapsed / fadeOutDuration;
+      return res.json({
+        r: Math.round((color.r * progress * brightness) / 255),
+        g: Math.round((color.g * progress * brightness) / 255),
+        b: Math.round((color.b * progress * brightness) / 255),
+      });
+    }
+  }
+
+  // No active timer window matched
+  return res.json({ color: null });
 });
 
 // --- Start Server ---
